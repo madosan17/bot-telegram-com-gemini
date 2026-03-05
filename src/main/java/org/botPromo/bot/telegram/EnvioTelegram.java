@@ -8,8 +8,7 @@ import java.net.http.HttpResponse;
 public class EnvioTelegram {
 
     public static void main(String[] args){
-        String token = "8607877528:AAFWEC-IVd-Kzir6cOsCTmw3xmpgfxZukvI";
-        String chatId = "7877909169";
+       
         String mensagem = "Matheus, vimos as melhores ofertas para você";
 
         String mensagemFormatada = mensagem.replace(" ", "%20");

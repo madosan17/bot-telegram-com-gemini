@@ -11,6 +11,9 @@ public class Configs {
     public static String getCLienteSecret(){
         return dotenv.get("ML_CLIENTE_SECRET");
     }
+    public static String getAcess_Token(){
+        return dotenv.get("ACCESS_TOKEN");
+    }
     public static String getApiKeyGemini(){
         return dotenv.get("GEMINI_API_KEY");
     }

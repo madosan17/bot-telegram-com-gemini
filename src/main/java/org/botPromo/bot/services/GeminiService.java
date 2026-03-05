@@ -1,5 +1,7 @@
 package org.botPromo.bot.services;
 
+import com.google.genai.Client;
+import com.google.genai.types.GenerateContentResponse;
 import org.botPromo.bot.configs.Configs;
 import org.botPromo.bot.model.Produto;
 
@@ -11,7 +13,7 @@ import java.net.http.HttpResponse;
 
 public class GeminiService {
     private static final String API_KEY = Configs.getApiKeyGemini();
-    private static final String URL_API = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" + API_KEY;
+    private static final Client client = Client.builder().apiKey(API_KEY).build();
 
     public static String pedirAnuncioParaIA(Produto produto) throws Exception{
             String prompt = "Aja como um especialista em ofertas. Crie um post para Telegram sobre o produto: "
@@ -23,46 +25,35 @@ public class GeminiService {
 
 
     }
-    public static boolean analisarOferta(Produto produto) throws Exception{
-            String prompt = "Analise o preço deste produto: " + produto.getTitulo() + " por R$ " + produto.getPreco() + ". " +
-                    "Baseado no mercado brasileiro de 2024/2025, o preço está excelente? " +
-                    "Responda APENAS com a palavra 'true' ou 'false'. Não use pontos ou explicações.";
+    public static boolean analisarOferta(Produto produto) {
+        String prompt = "Aja como um especialista em compras e comparador de preços no Brasil (Março/2026). " +
+                "Analise o seguinte produto: " + produto.getTitulo() + ". " +
+                "Preço atual: R$ " + produto.getPreco() + ". " +
+                "Sua tarefa: 1. Estime o preço médio de mercado para este produto NOVO em grandes varejistas (Amazon, ML, Magalu). " +
+                "2. Verifique se R$ " + produto.getPreco() + " representa um desconto real de pelo menos 10% em relação à média. " +
+                "3. Considere variações de modelo (ex: GB, polegadas, marca). " +
+                "Responda APENAS 'true' se for uma oportunidade real de economia ou 'false' se o preço estiver na média ou caro. " +
+                "Não explique, apenas uma palavra: true ou false.";
 
-            HttpClient client = HttpClient.newHttpClient();
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(URL_API))
-                    .header("content_type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(prompt))
-                    .build();
 
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        String respostaIA = chamarGemini(prompt).trim().toLowerCase();
 
-            String respostaIA = chamarGemini(prompt).trim().toLowerCase();
+        System.out.println("🤖 Resposta da IA para " + produto.getTitulo() + ": " + respostaIA);
 
-            return respostaIA.contains("true");
+        return respostaIA.contains("true");
     }
 
-    public static String chamarGemini(String prompt){
-        try{
-            String jsonBody = "{ \"contents\": [{ \"parts\":[{ \"text\": \"" + prompt + "\" }] }] }";
-
-            HttpClient client = HttpClient.newHttpClient();
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(URL_API))
-                    .header("content_type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
-                    .build();
-
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-
-            if (response.statusCode() == 200) {
-                return extrairTextoDoJSON(response.body());
-            } else {
-                return "Erro na IA: " + response.statusCode();
-            }
-        }catch(Exception e){
-            return "Falha ao se conectar ao Gemini " + e.getMessage();
-        }
+    public static String chamarGemini(String prompt) {
+       try {
+           GenerateContentResponse response = client.models.generateContent(
+                   "gemini-3-flash-preview",
+                   prompt,
+                   null
+           );
+           return response.text();
+       }catch (Exception e){
+           return "Erro: " + e.getMessage();
+       }
     }
 
 
